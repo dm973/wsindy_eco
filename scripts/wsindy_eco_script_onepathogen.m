@@ -8,7 +8,7 @@ seed2 = seed1; % seed for random noise
 % seed1 = randi(10^9);   % seed for random generation selection, can be pre-selected generations, or half-width for peak sampling
 seed2 = randi(10^9); % seed for random noise 
 snr_X = 0.00; % noise level for X
-snr_Y = 0.05; % noise level for Y
+snr_Y = 0.01; % noise level for Y
 noise_alg_X = 'logn'; % noise distribution for X
 noise_alg_Y = 'logn'; % noise distribution for Y
 

@@ -31,17 +31,17 @@ conf_tol = 0.25;
 figure(21);clf
 varget = 'IC';
 view_conf_int;
-IC_prune = find(abs(w_hat)<conf_tol*conf_int);
+IC_prune = find(abs(w_hat)<conf_tol*conf_int)
 
 figure(22);clf
 varget = 'Y';
 view_conf_int;
-Y_prune = find(abs(w_hat)<conf_tol*conf_int);
+Y_prune = find(abs(w_hat)<conf_tol*conf_int)
 
 figure(23);clf
 varget = 'X';
 view_conf_int;
-X_prune = find(abs(w_hat)<conf_tol*conf_int);
+X_prune = find(abs(w_hat)<conf_tol*conf_int)
 
 %% decide on terms to prune
 
