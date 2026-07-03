@@ -80,6 +80,14 @@ tn = (0:num_gen-1)*yearlength; % discrete time
 num_t_epi = length(t_epi{1});
 if isequal(X_var,'true')
     X_var = max(sigma_X,0);
+elseif isempty(X_var)
+    xfft = fft(X_train);
+    xfft_trunc = xfft;
+    xfft_trunc(abs(xfft)<0.1*max(abs(xfft(:))))=0;
+    x_trunc = real(ifft(xfft_trunc));
+    X_var = zeros(sized(X_train)) + std(X_train-x_trunc);
+else
+    X_var = zeros(sized(X_train)) + X_var;
 end
 if toggle_view_data==1 %%% view data
     t = cell2mat(arrayfun(@(i)(i-1)*yearlength+t_epi{i},(1:num_gen-1)','uni',0)); % full continuous time

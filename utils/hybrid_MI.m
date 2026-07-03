@@ -30,7 +30,7 @@ function [rhs,W,WS,lib_param,MSTLS_loss,lambda_hat,W_its,res_WENDy,res_0,CovW] =
             if c~=0
                 tol = max( mean(diag(WS.cov))+c*std(diag(WS.cov)),tol_libinc_min^2);
                 check = rms(res_0(:,end))^2 > tol;
-                disp([rms(res_0(:,end))^2 tol])
+                fprintf('\nms(res_0)=%g, cov tol=%g',full(rms(res_0(:,end))^2),full(tol))
             else
                 check = rms(res_0(:,end))^2 > max(tol_cov*mean(diag(WS.cov)),tol_libinc_min^2);
             end

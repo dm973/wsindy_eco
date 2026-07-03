@@ -3,49 +3,55 @@ addpath(genpath('../wsindy_obj_base'));
 rng('shuffle');
 
 %% data hyperparameters
+
 seed1 = 2;   % seed for random generation selection, can be pre-selected generations, or half-width for peak sampling
 seed2 = seed1; % seed for random noise
 % seed1 = randi(10^9);   % seed for random generation selection, can be pre-selected generations, or half-width for peak sampling
 seed2 = randi(10^9); % seed for random noise 
-snr_X = 0.00; % noise level for X
-snr_Y = 0.01; % noise level for Y
+snr_X = 0.000; % noise level for X
+snr_Y = 0.00; % noise level for Y
 noise_alg_X = 'logn'; % noise distribution for X
 noise_alg_Y = 'logn'; % noise distribution for Y
+toggle_load_true_model = 1;
 
-num_train_inds = -4; % number of generations observed / number of gens around each peak (if negative)
-% num_train_inds = 18; % number of generations observed / number of gens around each peak (if negative)
+num_train_inds = -5; %18; >0 => number of generations observed; <0 => number of gens around each peak
 train_time_frac = 0.75; % fraction of each generation observed
 subsamp_t = 2; % within-generation timescale multiplier
 toggle_scale = 1;
 
 %% algorithmic hyperparameters
-toggle_zero_crossing = 1; % halt simulations that are non-positive
 
+%%% tf params
 eta = 9;
 phifun_Y = @(t)(1-t.^2).^eta; % test function for continuous data
 tf_Y_params = {'meth','FFT','param',2,'mtmin',3,'subinds',-3};% test function params
-%%% for strong form with centered FD of width '2w+1' use phifun_Y = 'delta'
 
+%%% WENDy params
 WENDy_args = {'maxits_wendy',5,...
     'lambdas',10.^linspace(-4,0,50),'alpha',0.01,...
     'ittol',10^-4,'diag_reg',10^-4,'verbose',1};
 autowendy = 0.95; % confidence level for automatic library incrementation
 tol = 5; % default heuristic covariance factor for incrementation, chosen when autowendy = 0.5;
 tol_min = 0.1; % lower bound on rel. resid. to increment library, default for covariance severely underestimated
-tol_dd_learn = 10^-10; % ODE tolerance for forward solves in computing Y(T)
-X_var = [];%'true'; % specify variances for discrete vars X in WENDy, [] gives 0, 'true' uses true variances used to generate noise
+X_var = 'true'; % specify variances for discrete vars X in WENDy, float sets all to given value, 'true' uses true variances used to generate noise, [] sets variance according to deviation from periodic function
 
+%%% Y(end) params
+tol_dd_learn = 10^-10; % ODE tolerance for forward solves in computing Y(T)
+toggle_zero_crossing = 1; % halt simulations that are non-positive
+
+%%% library params
+V = 0.5; % true value: V = 0.5
 pmax_IC = 4; % max poly degree for IC solve
 polys_Y_Yeq = 0:3; % Y library for Yeq solve
 pmax_X_Yeq = 4; % max poly degree for X terms in Yeq solve
-polys_X_Xeq = 0:2; % X library in Xeq solve
-pmax_Y_Xeq = 4; % max poly degree for Y terms in Xeq solve
+polys_X_Xeq = 0:3; % X library in Xeq solve
+pmax_Y_Xeq = 8; % max poly degree for Y terms in Xeq solve
+custom_tags_Y = {[1+V 1]}; % custom Y tags for Yeq. Example: {[1+V 1]}. Stored with data
+custom_tags_X = {[-V 0]}; % custom X tags for Yeq. Stored with data
 neg_Y = 0; % toggle use negative powers for X terms in Yeq
 neg_X = 0; % toggle use negative powers for Y terms in Xeq
 boolT = {}; % restrict poly terms in Yeq
 boolTL = {}; % restrict poly terms in Yeq
-custom_tags_Y = {[1.5 1]}; % custom Y tags for Yeq. Example: {[1+V 1]}. Stored with data
-custom_tags_X = {[-0.5 0]}; % custom X tags for Yeq. Stored with data
 linregargs_fun_IC = @(WS){}; % addition linear regression args, including constraints, as function of WSINDy model object
 linregargs_fun_Y = @(WS){}; % Stored with data
 linregargs_fun_X = @(WS){}; % Stored with data
@@ -66,7 +72,6 @@ yscl = 'log';
 
 %% get data
 warning('off','MATLAB:dispatcher:UnresolvedFunctionHandle')
-toggle_load_true_model = 1;
 if toggle_load_true_model==0
     load('../data/Gregs_mod_V=0.5.mat','Ycell','X','t_epi','yearlength')
 else
@@ -85,7 +90,20 @@ num_gen = size(X,1);
 tn = (0:num_gen-1)*yearlength; % discrete time
 num_t_epi = length(t_epi{1});
 if isequal(X_var,'true')
-    X_var = max(sigma_X,0);
+    X_var = max(sigma_X,1e-6);
+elseif isempty(X_var)
+    % take top 5 modes
+    nmodes = 5;
+    xfft = fft(X_train);
+    xfft_trunc = xfft*0;
+    for i=1:size(xfft_trunc,2)
+        [~,inds] = sort(abs(xfft(:,i)));
+        xfft_trunc(inds(1:min(end,nmodes)),i) = xfft(inds(1:min(end,nmodes)),i);
+    end
+    x_trunc = real(ifft(xfft_trunc));
+    X_var = zeros(size(X_train)) + std(X_train-x_trunc);
+else
+    X_var = zeros(size(X_train)) + X_var;
 end
 if toggle_view_data==1 %%% view data
     figure(100)
